@@ -1,0 +1,28 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model LoanApplication {
+  id               String            @id @default(cuid())
+  reference        String            @unique
+  fullName         String
+  idNumber         String
+  loanType         String
+  amount           Int
+  repaymentMonths  Int
+  employmentStatus String
+  monthlyNetIncome Int
+  status           ApplicationStatus @default(PENDING)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+}
