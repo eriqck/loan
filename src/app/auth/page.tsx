@@ -7,30 +7,12 @@ type AuthMode = "login" | "register";
 type AuthRole = "client" | "admin";
 
 const ADMIN_PHONE = "0115683498";
-const ACCOUNTS_KEY = "loan:accounts";
 
-type StoredAccount = {
+type AuthSession = {
+  role: AuthRole;
   mobile: string;
   fullName: string;
 };
-
-function getStoredAccounts() {
-  const rawAccounts = window.localStorage.getItem(ACCOUNTS_KEY);
-
-  return rawAccounts ? (JSON.parse(rawAccounts) as StoredAccount[]) : [];
-}
-
-function saveStoredAccount(account: StoredAccount) {
-  const accounts = getStoredAccounts();
-  const withoutCurrent = accounts.filter(
-    (item) => item.mobile !== account.mobile,
-  );
-
-  window.localStorage.setItem(
-    ACCOUNTS_KEY,
-    JSON.stringify([account, ...withoutCurrent]),
-  );
-}
 
 function AuthPanel() {
   const router = useRouter();
@@ -41,59 +23,76 @@ function AuthPanel() {
   const [mobile, setMobile] = useState("");
   const [fullName, setFullName] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function submitAuth(event: React.FormEvent<HTMLFormElement>) {
+  async function submitAuth(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+    setIsSubmitting(true);
 
     if (!mobile.trim()) {
       setError("Enter your mobile number to continue.");
+      setIsSubmitting(false);
       return;
     }
 
     if (role === "admin" && mobile.trim() !== ADMIN_PHONE) {
       setError("Only the registered admin phone number can access admin.");
+      setIsSubmitting(false);
       return;
     }
-
-    let resolvedFullName = fullName.trim();
 
     if (mode === "register" && role === "client" && !fullName.trim()) {
       setError("Enter your full name to register.");
+      setIsSubmitting(false);
       return;
     }
 
-    if (role === "client" && mode === "login") {
-      const account = getStoredAccounts().find(
-        (item) => item.mobile === mobile.trim(),
-      );
+    try {
+      const response = await fetch("/api/auth", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          mode,
+          role,
+          mobile,
+          fullName,
+        }),
+      });
 
-      if (!account) {
-        setMode("register");
-        setError("No account found for that phone number. Register to continue.");
+      const payload = (await response.json()) as {
+        session?: AuthSession;
+        error?: string;
+      };
+
+      if (!response.ok || !payload.session) {
+        if (role === "client" && mode === "login" && response.status === 404) {
+          setMode("register");
+        }
+
+        setError(payload.error ?? "Authentication failed. Please try again.");
         return;
       }
 
-      resolvedFullName = account.fullName;
+      const session = {
+        ...payload.session,
+        reference,
+        signedInAt: new Date().toISOString(),
+      };
+
+      window.localStorage.setItem("loan:session", JSON.stringify(session));
+      router.push(role === "admin" ? "/admin" : "/dashboard");
+    } catch {
+      if (role === "client" && mode === "login") {
+        setMode("register");
+      }
+
+      setError("Could not reach the database. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
-
-    if (role === "client" && mode === "register") {
-      saveStoredAccount({
-        mobile: mobile.trim(),
-        fullName: resolvedFullName,
-      });
-    }
-
-    const session = {
-      role,
-      mobile: mobile.trim(),
-      fullName: role === "admin" ? "Admin" : resolvedFullName || "Client",
-      reference,
-      signedInAt: new Date().toISOString(),
-    };
-
-    window.localStorage.setItem("loan:session", JSON.stringify(session));
-    router.push(role === "admin" ? "/admin" : "/dashboard");
   }
 
   return (
@@ -178,8 +177,15 @@ function AuthPanel() {
 
           {error ? <p className="text-[12px] text-red-700">{error}</p> : null}
 
-          <button className="h-10 rounded-full bg-[#102084] text-[12px] font-bold uppercase text-white hover:bg-[#0b1764]">
-            {mode === "register" ? "Register" : "Login"}
+          <button
+            disabled={isSubmitting}
+            className="h-10 rounded-full bg-[#102084] text-[12px] font-bold uppercase text-white hover:bg-[#0b1764] disabled:cursor-not-allowed disabled:bg-slate-400"
+          >
+            {isSubmitting
+              ? "Please wait..."
+              : mode === "register"
+                ? "Register"
+                : "Login"}
           </button>
         </form>
 

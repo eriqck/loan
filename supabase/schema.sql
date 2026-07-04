@@ -1,3 +1,5 @@
+create extension if not exists pgcrypto;
+
 create table if not exists public.loan_applications (
   id uuid primary key default gen_random_uuid(),
   reference text not null unique,
@@ -13,6 +15,14 @@ create table if not exists public.loan_applications (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.client_accounts (
+  id uuid primary key default gen_random_uuid(),
+  mobile text not null unique,
+  full_name text not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create or replace function public.handle_updated_at()
 returns trigger as $$
 begin
@@ -24,4 +34,9 @@ $$ language plpgsql;
 drop trigger if exists loan_applications_set_updated_at on public.loan_applications;
 create trigger loan_applications_set_updated_at
 before update on public.loan_applications
+for each row execute procedure public.handle_updated_at();
+
+drop trigger if exists client_accounts_set_updated_at on public.client_accounts;
+create trigger client_accounts_set_updated_at
+before update on public.client_accounts
 for each row execute procedure public.handle_updated_at();
