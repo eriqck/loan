@@ -6,6 +6,8 @@ import { Suspense, useState } from "react";
 type AuthMode = "login" | "register";
 type AuthRole = "client" | "admin";
 
+const ADMIN_PHONE = "0115683498";
+
 function AuthPanel() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -25,6 +27,11 @@ function AuthPanel() {
       return;
     }
 
+    if (role === "admin" && mobile.trim() !== ADMIN_PHONE) {
+      setError("Only the registered admin phone number can access admin.");
+      return;
+    }
+
     if (mode === "register" && role === "client" && !fullName.trim()) {
       setError("Enter your full name to register.");
       return;
@@ -33,7 +40,7 @@ function AuthPanel() {
     const session = {
       role,
       mobile: mobile.trim(),
-      fullName: fullName.trim() || "Client",
+      fullName: role === "admin" ? "Admin" : fullName.trim() || "Client",
       reference,
       signedInAt: new Date().toISOString(),
     };

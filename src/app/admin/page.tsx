@@ -1,21 +1,35 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { LoanApplicationRecord } from "@/types/application";
 
+const ADMIN_PHONE = "0115683498";
+
 export default function AdminPage() {
+  const router = useRouter();
   const [applications, setApplications] = useState<LoanApplicationRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const rawSession = window.localStorage.getItem("loan:session");
+    const session = rawSession
+      ? (JSON.parse(rawSession) as { role?: string; mobile?: string })
+      : null;
+
+    if (session?.role !== "admin" || session.mobile !== ADMIN_PHONE) {
+      router.replace("/auth");
+      return;
+    }
+
     fetch("/api/applications")
       .then((response) => response.json())
       .then((payload: { applications: LoanApplicationRecord[] }) => {
         setApplications(payload.applications);
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [router]);
 
   return (
     <main className="min-h-screen bg-[#f4f7f6] text-slate-950">

@@ -1,3 +1,6 @@
+"use client";
+
+import { useMemo, useState } from "react";
 import { LoanForm } from "@/components/LoanForm";
 
 const navItems = [
@@ -7,7 +10,63 @@ const navItems = [
   "Bancassurance",
 ];
 
+function LoanCalculator() {
+  const [amount, setAmount] = useState(1000);
+  const [months, setMonths] = useState(12);
+
+  const monthlyPayment = useMemo(() => {
+    const annualRate = 0.12;
+    const monthlyRate = annualRate / 12;
+    const payment =
+      (amount * monthlyRate) / (1 - Math.pow(1 + monthlyRate, -months));
+
+    return Number.isFinite(payment) ? payment : 0;
+  }, [amount, months]);
+
+  return (
+    <div className="rounded border border-slate-300 bg-white p-4">
+      <h2 className="text-[14px] font-bold text-[#102084]">Loan Calculator</h2>
+
+      <div className="mt-4 grid gap-4">
+        <label className="grid gap-2 text-[12px] text-slate-950">
+          Amount (USD)
+          <input
+            type="number"
+            min="100"
+            step="100"
+            value={amount}
+            onChange={(event) => setAmount(Number(event.target.value))}
+            className="h-9 rounded border border-slate-300 px-3 text-[12px] outline-none focus:border-[#102084] focus:ring-2 focus:ring-[#102084]/10"
+          />
+        </label>
+
+        <label className="grid gap-2 text-[12px] text-slate-950">
+          Tenure (Months)
+          <select
+            value={months}
+            onChange={(event) => setMonths(Number(event.target.value))}
+            className="h-9 rounded border border-slate-300 px-3 text-[12px] outline-none focus:border-[#102084] focus:ring-2 focus:ring-[#102084]/10"
+          >
+            {[6, 12, 18, 24, 36, 48, 60].map((period) => (
+              <option key={period} value={period}>
+                {period}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <p className="text-[12px] font-bold text-slate-950">
+          Estimated Monthly: ${monthlyPayment.toFixed(2)}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
+  const [activeSection, setActiveSection] = useState("Apply for a Loan");
+  const isOverview = activeSection === "Overview";
+
   return (
     <main className="min-h-screen bg-[#f4f7f6] text-slate-950">
       <div className="h-9 border-b border-slate-200 bg-[#f1f2f2]">
@@ -44,32 +103,63 @@ export default function Home() {
       <section className="mx-auto grid max-w-[940px] gap-4 px-4 py-6 md:grid-cols-[188px_minmax(0,1fr)]">
         <aside className="rounded-md bg-white py-4 shadow-sm">
           {navItems.map((item) => {
-            const active = item === "Apply for a Loan";
+            const active = item === activeSection;
             return (
-              <div
+              <button
                 key={item}
-                className={`border-l-4 px-4 py-3 text-[12px] ${
+                type="button"
+                onClick={() => setActiveSection(item)}
+                className={`w-full border-l-4 px-4 py-3 text-left text-[12px] ${
                   active
                     ? "border-[#102084] bg-slate-100 text-[#102084]"
                     : "border-transparent text-slate-950"
                 }`}
               >
                 {item}
-              </div>
+              </button>
             );
           })}
         </aside>
 
         <div className="rounded-md bg-white p-6 shadow-sm">
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-[#102084]">
-              Loan Application
-            </h1>
-            <p className="mt-2 text-[12px] text-[#4b9d15]">
-              Fast, secure, and convenient financing.
-            </p>
-          </div>
-          <LoanForm />
+          {isOverview ? (
+            <>
+              <div className="mb-6">
+                <h1 className="text-2xl font-bold text-[#102084]">
+                  Banking at CABS
+                </h1>
+                <p className="mt-2 text-[12px] text-[#4b9d15]">
+                  Manage your financial journey with us.
+                </p>
+                <p className="mt-6 text-[12px] text-slate-950">
+                  Welcome to your CABS dashboard. Use the calculator below to
+                  estimate your loan repayments.
+                </p>
+              </div>
+              <LoanCalculator />
+            </>
+          ) : activeSection === "Apply for a Loan" ? (
+            <>
+              <div className="mb-6">
+                <h1 className="text-2xl font-bold text-[#102084]">
+                  Loan Application
+                </h1>
+                <p className="mt-2 text-[12px] text-[#4b9d15]">
+                  Fast, secure, and convenient financing.
+                </p>
+              </div>
+              <LoanForm />
+            </>
+          ) : (
+            <div>
+              <h1 className="text-2xl font-bold text-[#102084]">
+                {activeSection}
+              </h1>
+              <p className="mt-2 text-[12px] text-slate-600">
+                This service area is coming soon.
+              </p>
+            </div>
+          )}
         </div>
       </section>
     </main>
