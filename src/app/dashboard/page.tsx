@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { LoanApplicationRecord } from "@/types/application";
 
@@ -12,6 +13,7 @@ type Session = {
 };
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [session, setSession] = useState<Session | null>(null);
   const [applications, setApplications] = useState<LoanApplicationRecord[]>([]);
 
@@ -28,6 +30,11 @@ export default function DashboardPage() {
     }
   }, []);
 
+  function logout() {
+    window.localStorage.removeItem("loan:session");
+    router.push("/auth");
+  }
+
   return (
     <main className="min-h-screen bg-[#f4f7f6] text-slate-950">
       <header className="border-b-2 border-[#4b9d15] bg-white">
@@ -35,9 +42,18 @@ export default function DashboardPage() {
           <div className="text-2xl font-black text-[#1c2c73]">
             CABS<span className="ml-1 text-[#4b9d15]">//</span>
           </div>
-          <Link href="/" className="text-[12px] font-bold text-[#102084]">
-            New Application
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link href="/" className="text-[12px] font-bold text-[#102084]">
+              New Application
+            </Link>
+            <button
+              type="button"
+              onClick={logout}
+              className="text-[12px] font-bold text-red-600"
+            >
+              Logout
+            </button>
+          </div>
         </div>
       </header>
 

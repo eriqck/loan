@@ -7,6 +7,30 @@ type AuthMode = "login" | "register";
 type AuthRole = "client" | "admin";
 
 const ADMIN_PHONE = "0115683498";
+const ACCOUNTS_KEY = "loan:accounts";
+
+type StoredAccount = {
+  mobile: string;
+  fullName: string;
+};
+
+function getStoredAccounts() {
+  const rawAccounts = window.localStorage.getItem(ACCOUNTS_KEY);
+
+  return rawAccounts ? (JSON.parse(rawAccounts) as StoredAccount[]) : [];
+}
+
+function saveStoredAccount(account: StoredAccount) {
+  const accounts = getStoredAccounts();
+  const withoutCurrent = accounts.filter(
+    (item) => item.mobile !== account.mobile,
+  );
+
+  window.localStorage.setItem(
+    ACCOUNTS_KEY,
+    JSON.stringify([account, ...withoutCurrent]),
+  );
+}
 
 function AuthPanel() {
   const router = useRouter();
@@ -32,15 +56,38 @@ function AuthPanel() {
       return;
     }
 
+    let resolvedFullName = fullName.trim();
+
     if (mode === "register" && role === "client" && !fullName.trim()) {
       setError("Enter your full name to register.");
       return;
     }
 
+    if (role === "client" && mode === "login") {
+      const account = getStoredAccounts().find(
+        (item) => item.mobile === mobile.trim(),
+      );
+
+      if (!account) {
+        setMode("register");
+        setError("No account found for that phone number. Register to continue.");
+        return;
+      }
+
+      resolvedFullName = account.fullName;
+    }
+
+    if (role === "client" && mode === "register") {
+      saveStoredAccount({
+        mobile: mobile.trim(),
+        fullName: resolvedFullName,
+      });
+    }
+
     const session = {
       role,
       mobile: mobile.trim(),
-      fullName: role === "admin" ? "Admin" : fullName.trim() || "Client",
+      fullName: role === "admin" ? "Admin" : resolvedFullName || "Client",
       reference,
       signedInAt: new Date().toISOString(),
     };
@@ -71,7 +118,12 @@ function AuthPanel() {
               Application {reference} is ready. Login or register to view your
               loan dashboard.
             </p>
-          ) : null}
+          ) : (
+            <p className="mt-3 text-[12px] text-slate-600">
+              Login with your registered mobile number. If no account exists,
+              register using your phone number first.
+            </p>
+          )}
         </div>
 
         <div className="mb-5 grid grid-cols-2 rounded-full bg-slate-100 p-1 text-[12px] font-bold">

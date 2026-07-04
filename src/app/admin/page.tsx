@@ -31,6 +31,11 @@ export default function AdminPage() {
       .finally(() => setLoading(false));
   }, [router]);
 
+  function logout() {
+    window.localStorage.removeItem("loan:session");
+    router.push("/auth");
+  }
+
   return (
     <main className="min-h-screen bg-[#f4f7f6] text-slate-950">
       <header className="border-b-2 border-[#4b9d15] bg-white">
@@ -38,9 +43,18 @@ export default function AdminPage() {
           <div className="text-2xl font-black text-[#1c2c73]">
             CABS<span className="ml-1 text-[#4b9d15]">//</span>
           </div>
-          <Link href="/auth" className="text-[12px] font-bold text-[#102084]">
-            Logout
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link href="/" className="text-[12px] font-bold text-[#102084]">
+              Home
+            </Link>
+            <button
+              type="button"
+              onClick={logout}
+              className="text-[12px] font-bold text-red-600"
+            >
+              Logout
+            </button>
+          </div>
         </div>
       </header>
 

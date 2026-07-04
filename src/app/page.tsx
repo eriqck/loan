@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { LoanForm } from "@/components/LoanForm";
 
@@ -95,7 +96,9 @@ export default function Home() {
           <div className="text-[12px] font-medium text-[#102084]">
             <span className="mr-1 text-[#3a246f]">User:</span>
             Welcome, Client <span className="text-slate-500">|</span>{" "}
-            <span className="text-red-600">Logout</span>
+            <Link href="/auth" className="text-red-600">
+              Login
+            </Link>
           </div>
         </div>
       </header>
